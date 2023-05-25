@@ -26,6 +26,7 @@ def validate_token(view=None):
             if not app_model.enable_site:
                 raise NotFound()
 
+            validate_external_oauth_token(app_model)
             end_user = create_or_update_end_user_for_session(app_model)
 
             return view(app_model, end_user, *args, **kwargs)
@@ -59,6 +60,11 @@ def validate_and_get_site():
         raise NotFound()
 
     return site
+
+
+def validate_external_oauth_token(app_model):
+    auth_token = request.cookies.get('__Secure-next-auth.session-token')
+    print(f"auth token received: {auth_token}, app_id: {app_model.id}, try deal next...")
 
 
 def create_or_update_end_user_for_session(app_model):
