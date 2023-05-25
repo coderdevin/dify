@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import logging
 import uuid
 from functools import wraps
 
@@ -8,6 +9,8 @@ from werkzeug.exceptions import NotFound, Unauthorized
 
 from extensions.ext_database import db
 from models.model import App, Site, EndUser
+
+logger = logging.getLogger(__name__)
 
 
 def validate_token(view=None):
@@ -64,7 +67,7 @@ def validate_and_get_site():
 
 def validate_external_oauth_token(app_model):
     auth_token = request.cookies.get('__Secure-next-auth.session-token')
-    print(f"auth token received: {auth_token}, app_id: {app_model.id}, try deal next...")
+    logger.info(f"auth token received: {auth_token}, app_id: {app_model.id}, try deal next...")
 
 
 def create_or_update_end_user_for_session(app_model):
