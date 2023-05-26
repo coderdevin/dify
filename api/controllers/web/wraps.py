@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import logging
 import uuid
+from datetime import datetime
 from functools import wraps
 
 from flask import request, session
@@ -68,12 +69,13 @@ def validate_and_get_site():
 
 def validate_external_oauth_token(app_model):
     auth_token = request.cookies.get('__Secure-next-auth.session-token')
-    logger.info(f"auth token received: {auth_token}, app_id: {app_model.id}, try deal next...")
-    try:
-        res = next_auth.decrypt(auth_token)
-        logger.info(f"auth token decrypt result: {res}")
-    except Exception as e:
-        logger.error(e)
+    if not auth_token:
+        raise Unauthorized()
+    logger.debug(f"auth token received: {auth_token}, app_id: {app_model.id}, try deal next...")
+    auth_user_info = next_auth.decrypt(auth_token)
+    if not auth_user_info or auth_user_info["exp"] and auth_user_info["exp"] < datetime.utcnow().timestamp():
+        raise Unauthorized()
+    logger.info(f"authorized user: {auth_user_info['name']} request app ({app_model.name})...")
 
 
 def create_or_update_end_user_for_session(app_model):
