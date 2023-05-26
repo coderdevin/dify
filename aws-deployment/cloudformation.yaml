@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Launches a Dify (easy-to-use LLMOps platform) server.
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+    Default: qa
+  InstanceType:
+    Type: String
+    Default: t2.medium
+    Description: EC2 instance type
+    ConstraintDescription: must be a valid EC2 instance type
+  AppDomain:
+    Type: String
+    Default: app.smartcoder.ai
+    Description: Dify project application domain
+  AppPort:
+    Type: Number
+    Description: Specifies the opening port for the application
+    Default: '39080'
+  AppGitBranch:
+    Type: String
+    Description: github branch used for application deployment
+    Default: main
+  AppNextAuthEncryptionKey:
+    Type: String
+    Description: encryption key used for next-auth token decryption
+    Default: NextAuth.js Generated Encryption Key
+  AppNextAuthSecretKey:
+    Type: String
+    NoEcho: true
+    Description: secret key used for next-auth token decryption
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: Choose which VPC the applicaion should be deployed to
+  IntSubnets:
+    Description: Choose which subnets the applicaion should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Choose the ecs service security group
+  ElbListenerArn:
+    Type: String
+    Description: elb listener to use for dify (here we use dm ext elb 443 port)
+  ElbListenerRulePriority:
+    Type: Number
+    Default: "51"
+    Description: priority for the dify rule on the elb listener
+  AmiId:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: Specifies the AMI ID for your container instances.
+    Default: ecs-ami
+Outputs:
+  AutoScalingGroup:
+    Value:
+      Ref: asg
+  LaunchConfiguration:
+    Value:
+      Ref: asgLc
+Resources:
+  asg:
+    Properties:
+      AutoScalingGroupName: dify-ASG
+      DesiredCapacity: 1
+      LaunchConfigurationName:
+        Ref: asgLc
+      MaxSize: 1
+      MinSize: 0
+      Tags:
+      - Key: Name
+        PropagateAtLaunch: 'true'
+        Value: dify
+      - Key: Description
+        PropagateAtLaunch: 'true'
+        Value: This instance was created by dify-ASG
+      VPCZoneIdentifier: !Ref IntSubnets
+    Type: AWS::AutoScaling::AutoScalingGroup
+  asgLc:
+    Properties:
+      BlockDeviceMappings:
+      - DeviceName: "/dev/xvda"
+        Ebs:
+          DeleteOnTermination: true
+          VolumeSize: 30
+          VolumeType: gp2
+      IamInstanceProfile: !Ref instanceProfile
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      KeyName: !Sub ${EnvironmentName}webapplication
+      SecurityGroups:
+      - !Ref EcsSecurityGroup
+      # SpotPrice: '0.083'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo usermod -aG docker ec2-user
+          sudo curl -SL https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo yum install -y git
+
+          git clone -b ${AppGitBranch} --depth 1 https://github.com/coderdevin/dify.git && \
+          cd dify/docker && \
+          sed -i 's/\(^\s*APP_URL:\).*/\1 https:\/\/${AppDomain}/g;
+            s/^      \- "80:80"/      - "${AppPort}:80"/;
+            s/\(^\s*NEXT_AUTH_ENCRYPTION_KEY:\).*/\1 ${AppNextAuthEncryptionKey}/g;
+            s/\(^\s*NEXT_AUTH_SECRET_KEY:\).*/\1 ${AppNextAuthSecretKey}/g' docker-compose.yaml && \
+          git diff && \
+          docker-compose up -d
+    Type: AWS::AutoScaling::LaunchConfiguration
+  instanceRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyName: difyAppPermission
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:Get*
+            - s3:ListBucket
+            - s3:ListObjects
+            - s3:Put*
+            - s3:GetBucketLocation
+            - s3:DeleteObject
+            Resource:
+            - !Sub arn:aws:s3:::sn-secure-store-${EnvironmentName}
+            - !Sub arn:aws:s3:::sn-secure-store-${EnvironmentName}/dify-backup/*
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+      Path: "/"
+    Type: AWS::IAM::Role
+  instanceProfile:
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: instanceRole
+    Type: AWS::IAM::InstanceProfile
+  targetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      HealthCheckPath: "/favicon.ico"
+      Matcher:
+        HttpCode: "200"
+      Protocol: HTTP
+      Port: !Ref AppPort
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Description
+        Value: This resource was created for dify application
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  ElbListenerRule:
+    Properties:
+      Conditions:
+      - Field: host-header
+        Values:
+        - !Ref AppDomain
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref targetGroup
+      ListenerArn: !Sub ${ElbListenerArn}
+      Priority: !Sub ${ElbListenerRulePriority}
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
