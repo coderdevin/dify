@@ -110,8 +110,38 @@ Resources:
             s/^      \- "80:80"/      - "${AppPort}:80"/;
             s/\(^\s*NEXT_AUTH_ENCRYPTION_KEY:\).*/\1 ${AppNextAuthEncryptionKey}/g;
             s/\(^\s*NEXT_AUTH_SECRET_KEY:\).*/\1 ${AppNextAuthSecretKey}/g' docker-compose.yaml && \
-          git diff && \
+          git diff
+
+          backup_root_dir=/tmp/dify-backup
+          restore_root_dir=/tmp/dify-restore
+          backup_s3_dir=s3://sn-secure-store-${EnvironmentName}/dify-backup
+
+          echo "cd /dify/docker && \\"                                                                              > /root/dify-backup.sh
+          echo "rm -rf $backup_root_dir && mkdir $backup_root_dir && date && \\"                                   >> /root/dify-backup.sh
+          echo "tar -czvf $backup_root_dir/dify-backup.tar.gz ./volumes && \\"                                     >> /root/dify-backup.sh
+          echo "which aws >/dev/null 2>&1 || export PATH=/usr/local/bin:\$PATH"                                    >> /root/dify-backup.sh
+          echo "aws s3 cp $backup_root_dir/dify-backup.tar.gz $backup_s3_dir/\$(date +%Y%m%d%H%M%S).tar.gz && \\"  >> /root/dify-backup.sh
+          echo "echo 'a new backup was successful created' || exit 1"                                              >> /root/dify-backup.sh
+          echo "echo 'keep latest 7 backup records only'"                                                          >> /root/dify-backup.sh
+          echo "aws s3 ls $backup_s3_dir/ | awk '{print \$NF}' | sort -r | sed -n '7,\$p' \\"                      >> /root/dify-backup.sh
+          echo " | xargs -i aws s3 rm $backup_s3_dir/{}"                                                           >> /root/dify-backup.sh
+          chmod +x /root/dify-backup.sh
+
+          latest_backup_file=$(aws s3 ls $backup_s3_dir/ | awk '{print $NF}' | sort | sed -n '$p')
+          test -z $latest_backup_file && echo "no s3 backup record was found" || ( \
+            echo "$backup_s3_dir/$latest_backup_file was found for restore dify history data" && \
+            rm -rf $restore_root_dir && mkdir $restore_root_dir && cd $restore_root_dir && \
+            aws s3 cp $backup_s3_dir/$latest_backup_file dify-backup.tar.gz && \
+            tar -zxvf dify-backup.tar.gz && \
+            echo ">> restore dify with backup data ..." && \
+            mkdir /dify/docker/volumes && \
+            mv volumes/* /dify/docker/volumes/ \
+          )
+
+          test -d /root/logs || mkdir /root/logs
+          (crontab -l 2>/dev/null; echo "0 22 * * * /root/dify-backup.sh >> /root/logs/dify-backup.log 2>&1") | crontab -
           docker-compose up -d
+
     Type: AWS::AutoScaling::LaunchConfiguration
   instanceRole:
     Properties:
@@ -218,6 +248,7 @@ Resources:
     Properties:
       SecurityGroups:
       - !Ref extElbSecurityGroup
+      - !Ref EcsSecurityGroup
       Subnets: !Ref ExtSubnets
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
   extElbSecurityGroup:
