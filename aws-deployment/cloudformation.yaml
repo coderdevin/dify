@@ -36,12 +36,18 @@ Parameters:
   IntSubnets:
     Description: Choose which subnets the applicaion should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
+  ExtSubnets:
+    Description: Choose which subnets the applicaion should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Choose the ecs service security group
-  ElbListenerArn:
+  # ElbListenerArn:
+  #   Type: String
+  #   Description: elb listener to use for dify (here we use dm ext elb 443 port)
+  ElbHttpsListenerCertId:
     Type: String
-    Description: elb listener to use for dify (here we use dm ext elb 443 port)
+    Description: https certificate bind to elb https listener
   ElbListenerRulePriority:
     Type: Number
     Default: "51"
@@ -169,6 +175,69 @@ Resources:
       Actions:
       - Type: forward
         TargetGroupArn: !Ref targetGroup
-      ListenerArn: !Sub ${ElbListenerArn}
+      # ListenerArn: !Sub ${ElbListenerArn}
+      ListenerArn: !Ref extHttpsListener
       Priority: !Sub ${ElbListenerRulePriority}
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  extHttpsListener:
+    Properties:
+      DefaultActions:
+      - FixedResponseConfig:
+          ContentType: text/html
+          MessageBody: !Sub |
+            <!DOCTYPE html>
+            <html>
+              <head><title>Default Page</title></head>
+              <body>
+                <h1>Default Page</h1>
+                <p>This page.</p>
+              </body>
+            </html>
+          StatusCode: '403'
+        Type: fixed-response
+      LoadBalancerArn: !Ref extElbLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Sub arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${ElbHttpsListenerCertId}
+      SslPolicy: ELBSecurityPolicy-FS-1-2-Res-2020-10
+    Type: AWS::ElasticLoadBalancingV2::Listener
+  extHttpListener:
+    Properties:
+      DefaultActions:
+      - RedirectConfig:
+          Port: '443'
+          Protocol: HTTPS
+          StatusCode: HTTP_301
+        Type: redirect
+      LoadBalancerArn: !Ref extElbLoadBalancer
+      Port: 80
+      Protocol: HTTP
+    Type: AWS::ElasticLoadBalancingV2::Listener
+  extElbLoadBalancer:
+    Properties:
+      SecurityGroups:
+      - !Ref extElbSecurityGroup
+      Subnets: !Ref ExtSubnets
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  extElbSecurityGroup:
+    Properties:
+      GroupDescription: SG for dify elb
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        Description: full open
+        FromPort: 80
+        IpProtocol: tcp
+        ToPort: 80
+      - CidrIp: 0.0.0.0/0
+        Description: full open
+        FromPort: 443
+        IpProtocol: tcp
+        ToPort: 443
+      Tags:
+      - Key: Name
+        Value: Dify project
+      - Key: Env
+        Value: !Sub ${EnvironmentName}
+      VpcId: !Ref VPC
+    Type: AWS::EC2::SecurityGroup
