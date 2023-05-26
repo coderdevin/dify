@@ -72,7 +72,12 @@ def validate_external_oauth_token(app_model):
     if not auth_token:
         raise Unauthorized()
     logger.debug(f"auth token received: {auth_token}, app_id: {app_model.id}, try deal next...")
-    auth_user_info = next_auth.decrypt(auth_token)
+    auth_user_info = None
+    try:
+        auth_user_info = next_auth.decrypt(auth_token)
+    except Exception as e:
+        logger.error(f"error decrypt external auth token, message: {str(e)}")
+
     if not auth_user_info or auth_user_info["exp"] and auth_user_info["exp"] < datetime.utcnow().timestamp():
         raise Unauthorized()
     logger.info(f"authorized user: {auth_user_info['name']} request app ({app_model.name})...")
