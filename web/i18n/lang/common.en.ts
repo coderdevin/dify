@@ -6,6 +6,7 @@ const translation = {
     remove: 'Removed',
   },
   operation: {
+    create: 'Create',
     confirm: 'Confirm',
     cancel: 'Cancel',
     clear: 'Clear',
@@ -61,7 +62,8 @@ const translation = {
   },
   menus: {
     status: 'beta',
-    apps: 'Apps',
+    explore: 'Explore',
+    apps: 'Build Apps',
     plugins: 'Plugins',
     pluginsTips: 'Integrate third-party plugins or create ChatGPT-compatible AI-Plugins.',
     datasets: 'Datasets',
@@ -140,6 +142,7 @@ const translation = {
     apiKey: "API Key",
     enterYourKey: "Enter your API key here",
     invalidKey: "Invalid OpenAI API key",
+    validatedError: "Validation failed: ",
     validating: "Validating key...",
     saveFailed: "Save api key failed",
     apiKeyExceedBill: "This API KEY has no quota available, please read",
