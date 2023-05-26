@@ -8,6 +8,7 @@ from flask_restful import Resource
 from werkzeug.exceptions import NotFound, Unauthorized
 
 from extensions.ext_database import db
+from libs import next_auth
 from models.model import App, Site, EndUser
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,11 @@ def validate_and_get_site():
 def validate_external_oauth_token(app_model):
     auth_token = request.cookies.get('__Secure-next-auth.session-token')
     logger.info(f"auth token received: {auth_token}, app_id: {app_model.id}, try deal next...")
+    try:
+        res = next_auth.decrypt(auth_token)
+        logger.info(f"auth token decrypt result: {res}")
+    except Exception as e:
+        logger.error(e)
 
 
 def create_or_update_end_user_for_session(app_model):

@@ -92,6 +92,10 @@ class Config:
         # Alternatively you can set it with `SECRET_KEY` environment variable.
         self.SECRET_KEY = get_env('SECRET_KEY')
 
+        # next-auth encryption settings
+        self.NEXT_AUTH_ENCRYPTION_KEY = get_env('NEXT_AUTH_ENCRYPTION_KEY')
+        self.NEXT_AUTH_SECRET_KEY = get_env('NEXT_AUTH_SECRET_KEY')
+
         # cookie settings
         self.REMEMBER_COOKIE_HTTPONLY = get_bool_env('COOKIE_HTTPONLY')
         self.SESSION_COOKIE_HTTPONLY = get_bool_env('COOKIE_HTTPONLY')
