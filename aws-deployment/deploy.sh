@@ -25,11 +25,11 @@ head -n -1 | awk -F '/' '{ print $1 }' | sort -u)
 # build docker image
 echo "$changed_files" | grep -q "^api$" && \
 cd ../api && \
-docker build . -t langgenius/dify-api:$tag_built --build-arg $$ref_after
+docker build . -t langgenius/dify-api:$tag_built --build-arg $ref_after
 # build docker image
 echo "$changed_files" | grep -q "^web$" && \
 cd ../web && \
-docker build . -t langgenius/dify-web:$tag_built --build-arg $$ref_after
+docker build . -t langgenius/dify-web:$tag_built --build-arg $ref_after
 
 # recreate docker containers using image built above
 cd ../docker && \
