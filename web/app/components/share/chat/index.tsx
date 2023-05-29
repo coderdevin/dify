@@ -24,8 +24,6 @@ import AppUnavailable from '../../base/app-unavailable'
 import { userInputsFormToPromptVariables } from '@/utils/model-config'
 import { SuggestedQuestionsAfterAnswerConfig } from '@/models/debug'
 import { InstalledApp } from '@/models/explore'
-import { cookies } from 'next/headers'
-import { useRouter } from 'next/navigation'
 
 import s from './style.module.css'
 
@@ -41,13 +39,6 @@ const Main: FC<IMainProps> = ({
   const { t } = useTranslation()
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
-  const cookieStore = cookies()
-  const session = cookieStore.get('next-auth.session-token')
-  if (!session) {
-    const router = useRouter()
-    router.push('www.smartcoder.ai/login')
-    return
-  }
 
   /*
   * app info
