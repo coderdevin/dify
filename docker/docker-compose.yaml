@@ -224,25 +224,6 @@ services:
       AUTHORIZATION_ADMINLIST_ENABLED: 'true'
       AUTHORIZATION_ADMINLIST_USERS: 'hello@dify.ai'
 
-  # Extra applications puts here
-  # Ghost (news)
-  ghost:
-    image: ghost
-    restart: always
-    ports:
-      - "2368:2368"
-    environment:
-      url: https://news.smartcoder.ai
-      database__client: postgres
-      database__connection__host: db
-      database__connection__user: postgres
-      database__connection__password: difyai123456
-      database__connection__database: ghost
-    depends_on:
-      - db
-    volumes:
-      - ./volumes/ghost:/var/lib/ghost
-
   # The nginx reverse proxy.
   # used for reverse proxying the API service and Web service.
   nginx:
@@ -256,3 +237,37 @@ services:
       - web
     ports:
       - "80:80"
+
+  # Extra applications starts here
+  # mysql
+  mysql:
+    image: mysql
+    restart: always
+    command: "--default-authentication-plugin=mysql_native_password --skip-mysqlx"
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "03d74e4b02009eb1fa347b8bc0abe774"
+      MYSQL_DATABASE: "ghostdb"
+      MYSQL_PASSWORD: "Ghost,123456"
+      MYSQL_USER: "ghost"
+    volumes:
+      - "./volumes/mysql:/var/lib/mysql"
+
+  # Ghost (news)
+  ghost:
+    image: ghost
+    restart: always
+    ports:
+      - "2368:2368"
+    environment:
+      url: https://news.smartcoder.ai
+      database__client: mysql
+      database__connection__host: mysql
+      database__connection__user: ghost
+      database__connection__password: Ghost,123456
+      database__connection__database: ghostdb
+    depends_on:
+      - mysql
+    volumes:
+      - ./volumes/ghost/content:/var/lib/ghost/content
