@@ -143,6 +143,8 @@ docker/volumes/app/storage/*
 docker/volumes/db/data/*
 docker/volumes/redis/data/*
 docker/volumes/weaviate/*
+docker/volumes/ghost/*
+docker/volumes/mysql/*
 
 sdks/python-client/build
 sdks/python-client/dist
