@@ -18,6 +18,22 @@ Parameters:
     Type: Number
     Description: Specifies the opening port for the application
     Default: '39080'
+  ElbListenerRulePriority:
+    Type: Number
+    Default: "51"
+    Description: priority for the dify rule on the elb listener
+  GhostAppDomain:
+    Type: String
+    Default: news.smartcoder.ai
+    Description: ghost (news) project application domain
+  GhostAppPort:
+    Type: Number
+    Description: Specifies the opening port for the application
+    Default: '39081'
+  GhostElbListenerRulePriority:
+    Type: Number
+    Default: "52"
+    Description: priority for the dify rule on the elb listener
   AppGitBranch:
     Type: String
     Description: github branch used for application deployment
@@ -48,10 +64,6 @@ Parameters:
   ElbHttpsListenerCertId:
     Type: String
     Description: https certificate bind to elb https listener
-  ElbListenerRulePriority:
-    Type: Number
-    Default: "51"
-    Description: priority for the dify rule on the elb listener
   AmiId:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: Specifies the AMI ID for your container instances.
@@ -108,6 +120,7 @@ Resources:
           cd dify/docker && \
           sed -i 's/\(^\s*APP_URL:\).*/\1 https:\/\/${AppDomain}/g;
             s/^      \- "80:80"/      - "${AppPort}:80"/;
+            s/^      \- "2368:2368"/      - "${GhostAppPort}:2368"/;
             s/\(^\s*NEXT_AUTH_ENCRYPTION_KEY:\).*/\1 ${AppNextAuthEncryptionKey}/g;
             s/\(^\s*NEXT_AUTH_SECRET_KEY:\).*/\1 ${AppNextAuthSecretKey}/g' docker-compose.yaml && \
           git diff
@@ -208,6 +221,35 @@ Resources:
       # ListenerArn: !Sub ${ElbListenerArn}
       ListenerArn: !Ref extHttpsListener
       Priority: !Sub ${ElbListenerRulePriority}
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  ghostTargetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      HealthCheckPath: "/"
+      Matcher:
+        HttpCode: "200"
+      Protocol: HTTP
+      Port: !Ref GhostAppPort
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Description
+        Value: This resource was created for ghost application
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  ghostElbListenerRule:
+    Properties:
+      Conditions:
+      - Field: host-header
+        Values:
+        - !Ref GhostAppDomain
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref ghostTargetGroup
+      # ListenerArn: !Sub ${ElbListenerArn}
+      ListenerArn: !Ref extHttpsListener
+      Priority: !Sub ${GhostElbListenerRulePriority}
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
   extHttpsListener:
     Properties:
