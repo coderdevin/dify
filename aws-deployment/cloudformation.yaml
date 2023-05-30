@@ -147,7 +147,7 @@ Resources:
             aws s3 cp $backup_s3_dir/$latest_backup_file dify-backup.tar.gz && \
             tar -zxvf dify-backup.tar.gz && \
             echo ">> restore dify with backup data ..." && \
-            mkdir /dify/docker/volumes && \
+            rm -rf /dify/docker/volumes/* && \
             mv volumes/* /dify/docker/volumes/ \
           )
 
@@ -230,7 +230,7 @@ Resources:
       UnhealthyThresholdCount: 2
       HealthCheckPath: "/"
       Matcher:
-        HttpCode: "200"
+        HttpCode: "200-301"
       Protocol: HTTP
       Port: !Ref GhostAppPort
       VpcId: !Ref VPC
