@@ -224,6 +224,25 @@ services:
       AUTHORIZATION_ADMINLIST_ENABLED: 'true'
       AUTHORIZATION_ADMINLIST_USERS: 'hello@dify.ai'
 
+  # Extra applications puts here
+  # Ghost (news)
+  ghost:
+    image: ghost
+    restart: always
+    ports:
+      - "2368:2368"
+    environment:
+      url: https://news.smartcoder.ai
+      database__client: postgres
+      database__connection__host: db
+      database__connection__user: postgres
+      database__connection__password: difyai123456
+      database__connection__database: ghost
+    depends_on:
+      - db
+    volumes:
+      - ./volumes/ghost:/var/lib/ghost
+
   # The nginx reverse proxy.
   # used for reverse proxying the API service and Web service.
   nginx:
