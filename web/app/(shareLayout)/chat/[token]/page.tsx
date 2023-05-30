@@ -7,7 +7,7 @@ import Main from '@/app/components/share/chat'
 import { useRouter } from 'next/navigation'
 
 const Chat: FC<IMainProps> = () => {
-  const session = getCookie("next-auth.session-token");
+  const session = getCookie("__Secure-next-auth.session-token");
   if (!session) {
     const router = useRouter()
     router.push('https://www.smartcoder.ai/login')
