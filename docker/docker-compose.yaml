@@ -267,6 +267,12 @@ services:
       database__connection__user: ghost
       database__connection__password: Ghost,123456
       database__connection__database: ghostdb
+      mail__transport: SMTP
+      mail__options__service: Brevo
+      mail__options__host: smtp-relay.sendinblue.com
+      mail__options__port: 587
+      mail__options__auth__user:
+      mail__options__auth__pass:
     depends_on:
       - mysql
     volumes:
