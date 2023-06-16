@@ -299,7 +299,7 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 5
       UnhealthyThresholdCount: 2
-      HealthCheckPath: "/"
+      HealthCheckPath: "/api/doc.html"
       Matcher:
         HttpCode: "200-301"
       Protocol: HTTP
