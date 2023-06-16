@@ -10,6 +10,10 @@ Parameters:
     Default: t2.medium
     Description: EC2 instance type
     ConstraintDescription: must be a valid EC2 instance type
+  InstanceDesiredCapacity:
+    Type: Number
+    Default: "1"
+    Description: asg desired capacity for instance launching
   AppDomain:
     Type: String
     Default: app.smartcoder.ai
@@ -34,6 +38,36 @@ Parameters:
     Type: Number
     Default: "52"
     Description: priority for the dify rule on the elb listener
+  SmartcoderApiDomain:
+    Type: String
+    Default: api.smartcoder.ai
+    Description: smartcoder-api project application domain
+  SmartcoderApiPort:
+    Type: Number
+    Description: Specifies the opening port for the application
+    Default: '39082'
+  SmartcoderApiElbListenerRulePriority:
+    Type: Number
+    Default: "53"
+    Description: priority for the dify rule on the elb listener
+  GitUsername:
+    Type: String
+    Description: github user used for application deployment
+  GitToken:
+    Type: String
+    Description: github user token used for application deployment
+  SmartcoderApiGoogleClientId:
+    Type: String
+    Description: google client id for smartcoder oauth
+  SmartcoderApiGoogleClientSecret:
+    Type: String
+    Description: google client secret for smartcoder oauth
+  SmartcoderApiGithubClientId:
+    Type: String
+    Description: github client id for smartcoder oauth
+  SmartcoderApiGithubClientSecret:
+    Type: String
+    Description: github client secret for smartcoder oauth
   AppGitBranch:
     Type: String
     Description: github branch used for application deployment
@@ -79,10 +113,10 @@ Resources:
   asg:
     Properties:
       AutoScalingGroupName: dify-ASG
-      DesiredCapacity: 1
+      DesiredCapacity: !Sub ${InstanceDesiredCapacity}
       LaunchConfigurationName:
         Ref: asgLc
-      MaxSize: 1
+      MaxSize: !Sub ${InstanceDesiredCapacity}
       MinSize: 0
       Tags:
       - Key: Name
@@ -116,12 +150,20 @@ Resources:
           sudo chmod +x /usr/local/bin/docker-compose
           sudo yum install -y git
 
-          git clone -b ${AppGitBranch} --depth 1 https://github.com/coderdevin/dify.git && \
-          cd dify/docker && \
+          git clone -b ${AppGitBranch} --depth 1 https://${GitUsername}:${GitToken}@github.com/coderdevin/dify.git && \
+          git clone -b main https://${GitUsername}:${GitToken}@github.com/smartcoderorg/smartcoder-api.git && \
+          cd smartcoder-api && \
+          docker build . -t smartcoder-api:latest && \
+          cd ../dify/docker && \
           sed -i 's/\(^\s*APP_URL:\).*/\1 https:\/\/${AppDomain}/g;
             s/^      \- "80:80"/      - "${AppPort}:80"/;
             s/^      \- "2368:2368"/      - "${GhostAppPort}:2368"/;
+            s/^      \- "8000:8000"/      - "${SmartcoderApiPort}:8000"/;
             s/\(^\s*NEXT_AUTH_ENCRYPTION_KEY:\).*/\1 ${AppNextAuthEncryptionKey}/g;
+            s/\(^\s*GOOGLE_CLIENT_ID:\).*/\1 ${SmartcoderApiGoogleClientId}/g;
+            s/\(^\s*GOOGLE_CLIENT_SECRET:\).*/\1 ${SmartcoderApiGoogleClientSecret}/g;
+            s/\(^\s*GITHUB_CLIENT_ID:\).*/\1 ${SmartcoderApiGithubClientId}/g;
+            s/\(^\s*GITHUB_CLIENT_SECRET:\).*/\1 ${SmartcoderApiGithubClientSecret}/g;
             s/\(^\s*NEXT_AUTH_SECRET_KEY:\).*/\1 ${AppNextAuthSecretKey}/g' docker-compose.yaml && \
           git diff
 
@@ -250,6 +292,35 @@ Resources:
       # ListenerArn: !Sub ${ElbListenerArn}
       ListenerArn: !Ref extHttpsListener
       Priority: !Sub ${GhostElbListenerRulePriority}
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  smartcoderApiTargetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      HealthCheckPath: "/"
+      Matcher:
+        HttpCode: "200-301"
+      Protocol: HTTP
+      Port: !Ref SmartcoderApiPort
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Description
+        Value: This resource was created for smartcoder-api application
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  smartcoderApiElbListenerRule:
+    Properties:
+      Conditions:
+      - Field: host-header
+        Values:
+        - !Ref SmartcoderApiDomain
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref smartcoderApiTargetGroup
+      # ListenerArn: !Sub ${ElbListenerArn}
+      ListenerArn: !Ref extHttpsListener
+      Priority: !Sub ${SmartcoderApiElbListenerRulePriority}
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
   extHttpsListener:
     Properties:

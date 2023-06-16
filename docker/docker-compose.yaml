@@ -277,3 +277,28 @@ services:
       - mysql
     volumes:
       - ./volumes/ghost/content:/var/lib/ghost/content
+
+  # smartcode-api
+  smartcoder-api:
+    image: smartcoder-api:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      CONTEXT_PATH: /api
+      GOOGLE_CLIENT_ID:
+      GOOGLE_CLIENT_SECRET:
+      GITHUB_CLIENT_ID:
+      GITHUB_CLIENT_SECRET:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: smartcoder
+      DB_USERNAME: smartcoder
+      DB_PASSWORD: Smartcoder,123456
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: difyai123456
+    depends_on:
+      - db
+      - redis
