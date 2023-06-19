@@ -152,19 +152,20 @@ Resources:
 
           git clone -b ${AppGitBranch} --depth 1 https://${GitUsername}:${GitToken}@github.com/coderdevin/dify.git && \
           git clone -b main https://${GitUsername}:${GitToken}@github.com/smartcoderorg/smartcoder-api.git && \
-          cd smartcoder-api && \
-          docker build . -t smartcoder-api:latest && \
-          cd ../dify/docker && \
+          cd smartcoder-api/docker && \
+          cp .env.example .env && \
+          sed -i 's/\(^EXPOSED_PORT\)=.*/\1='$SmartcoderApiPort'/g;
+                  s/\(^GOOGLE_CLIENT_ID\)=.*/\1='$SmartcoderApiGoogleClientId'/g;
+                  s/\(^GOOGLE_CLIENT_SECRET\)=.*/\1='$SmartcoderApiGoogleClientSecret'/g;
+                  s/\(^GITHUB_CLIENT_ID\)=.*/\1='$SmartcoderApiGithubClientId'/g;
+                  s/\(^GITHUB_CLIENT_SECRET\)=.*/\1='$SmartcoderApiGithubClientSecret'/g' .env && \
+          cd ../../dify/docker && \
           sed -i 's/\(^\s*APP_URL:\).*/\1 https:\/\/${AppDomain}/g;
-            s/^      \- "80:80"/      - "${AppPort}:80"/;
-            s/^      \- "2368:2368"/      - "${GhostAppPort}:2368"/;
-            s/^      \- "8000:8000"/      - "${SmartcoderApiPort}:8000"/;
-            s/\(^\s*NEXT_AUTH_ENCRYPTION_KEY:\).*/\1 ${AppNextAuthEncryptionKey}/g;
-            s/\(^\s*GOOGLE_CLIENT_ID:\).*/\1 ${SmartcoderApiGoogleClientId}/g;
-            s/\(^\s*GOOGLE_CLIENT_SECRET:\).*/\1 ${SmartcoderApiGoogleClientSecret}/g;
-            s/\(^\s*GITHUB_CLIENT_ID:\).*/\1 ${SmartcoderApiGithubClientId}/g;
-            s/\(^\s*GITHUB_CLIENT_SECRET:\).*/\1 ${SmartcoderApiGithubClientSecret}/g;
-            s/\(^\s*NEXT_AUTH_SECRET_KEY:\).*/\1 ${AppNextAuthSecretKey}/g' docker-compose.yaml && \
+                  s/^      \- "80:80"/      - "${AppPort}:80"/;
+                  s/^      \- "2368:2368"/      - "${GhostAppPort}:2368"/;
+                  s/^      \- "8000:8000"/      - "${SmartcoderApiPort}:8000"/;
+                  s/\(^\s*NEXT_AUTH_ENCRYPTION_KEY:\).*/\1 ${AppNextAuthEncryptionKey}/g;
+                  s/\(^\s*NEXT_AUTH_SECRET_KEY:\).*/\1 ${AppNextAuthSecretKey}/g' docker-compose.yaml && \
           git diff
 
           backup_root_dir=/tmp/dify-backup
@@ -196,6 +197,7 @@ Resources:
           test -d /root/logs || mkdir /root/logs
           (crontab -l 2>/dev/null; echo "0 22 * * * /root/dify-backup.sh >> /root/logs/dify-backup.log 2>&1") | crontab -
           docker-compose up -d
+          cd /smartcoder-api/docker && ./deploy.sh
 
     Type: AWS::AutoScaling::LaunchConfiguration
   instanceRole:
