@@ -196,7 +196,7 @@ Resources:
 
           test -d /root/logs || mkdir /root/logs
           (crontab -l 2>/dev/null; echo "0 22 * * * /root/dify-backup.sh >> /root/logs/dify-backup.log 2>&1") | crontab -
-          docker-compose up -d
+          cd /dify/docker && docker-compose up -d
           cd /smartcoder-api/docker && ./deploy.sh
 
     Type: AWS::AutoScaling::LaunchConfiguration
