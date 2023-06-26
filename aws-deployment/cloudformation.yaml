@@ -152,10 +152,10 @@ Resources:
           git clone -b main https://${GitUsername}:${GitToken}@github.com/smartcoderorg/smartcoder-api.git && \
           cd smartcoder-api/docker && \
           cp .env.example .env && \
-          sed -i 's/\(^GOOGLE_CLIENT_ID\)=.*/\1='$SmartcoderApiGoogleClientId'/g;
-                  s/\(^GOOGLE_CLIENT_SECRET\)=.*/\1='$SmartcoderApiGoogleClientSecret'/g;
-                  s/\(^GITHUB_CLIENT_ID\)=.*/\1='$SmartcoderApiGithubClientId'/g;
-                  s/\(^GITHUB_CLIENT_SECRET\)=.*/\1='$SmartcoderApiGithubClientSecret'/g' .env && \
+          sed -i 's/\(^GOOGLE_CLIENT_ID\)=.*/\1=${SmartcoderApiGoogleClientId}/g;
+                  s/\(^GOOGLE_CLIENT_SECRET\)=.*/\1=${SmartcoderApiGoogleClientSecret}/g;
+                  s/\(^GITHUB_CLIENT_ID\)=.*/\1=${SmartcoderApiGithubClientId}/g;
+                  s/\(^GITHUB_CLIENT_SECRET\)=.*/\1=${SmartcoderApiGithubClientSecret}/g' .env && \
           cd ../../dify/docker && \
           sed -i 's/\(^\s*APP_URL:\).*/\1 https:\/\/${AppDomain}/g;
                   s/^      \- "80:80"/      - "${AppPort}:80"/;
