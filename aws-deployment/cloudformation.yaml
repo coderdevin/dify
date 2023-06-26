@@ -46,12 +46,25 @@ Parameters:
     Description: google client id for smartcoder oauth
   SmartcoderApiGoogleClientSecret:
     Type: String
+    NoEcho: true
     Description: google client secret for smartcoder oauth
   SmartcoderApiGithubClientId:
     Type: String
     Description: github client id for smartcoder oauth
   SmartcoderApiGithubClientSecret:
     Type: String
+    NoEcho: true
+    Description: github client secret for smartcoder oauth
+  SmartcoderApiDbUser:
+    Type: String
+    Description: github client secret for smartcoder oauth
+  SmartcoderApiDbPassword:
+    Type: String
+    NoEcho: true
+    Description: github client secret for smartcoder oauth
+  SmartcoderApiRedisPassword:
+    Type: String
+    NoEcho: true
     Description: github client secret for smartcoder oauth
   AppGitBranch:
     Type: String
@@ -155,7 +168,10 @@ Resources:
           sed -i 's/\(^GOOGLE_CLIENT_ID\)=.*/\1=${SmartcoderApiGoogleClientId}/g;
                   s/\(^GOOGLE_CLIENT_SECRET\)=.*/\1=${SmartcoderApiGoogleClientSecret}/g;
                   s/\(^GITHUB_CLIENT_ID\)=.*/\1=${SmartcoderApiGithubClientId}/g;
-                  s/\(^GITHUB_CLIENT_SECRET\)=.*/\1=${SmartcoderApiGithubClientSecret}/g' .env && \
+                  s/\(^GITHUB_CLIENT_SECRET\)=.*/\1=${SmartcoderApiGithubClientSecret}/g;
+                  s/\(^DB_USERNAME\)=.*/\1=${SmartcoderApiDbUser}/g;
+                  s/\(^DB_PASSWORD\)=.*/\1=${SmartcoderApiDbPassword}/g;
+                  s/\(^REDIS_PASSWORD\)=.*/\1=${SmartcoderApiRedisPassword}/g' .env && \
           cd ../../dify/docker && \
           sed -i 's/\(^\s*APP_URL:\).*/\1 https:\/\/${AppDomain}/g;
                   s/^      \- "80:80"/      - "${AppPort}:80"/;
