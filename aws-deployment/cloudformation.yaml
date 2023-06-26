@@ -57,13 +57,16 @@ Parameters:
     Description: github client secret for smartcoder oauth
   SmartcoderApiDbUser:
     Type: String
+    Default: smartcoder
     Description: github client secret for smartcoder oauth
   SmartcoderApiDbPassword:
     Type: String
+    Default: Smartcoder,123456
     NoEcho: true
     Description: github client secret for smartcoder oauth
   SmartcoderApiRedisPassword:
     Type: String
+    Default: difyai123456
     NoEcho: true
     Description: github client secret for smartcoder oauth
   AppGitBranch:
