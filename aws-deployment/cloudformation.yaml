@@ -126,7 +126,7 @@ Resources:
       - Key: Description
         PropagateAtLaunch: 'true'
         Value: This instance was created by dify-ASG
-      VPCZoneIdentifier: !Ref ExtSubnets
+      VPCZoneIdentifier: !Ref ExtSubnets  # must bind the specified public ip or unable to access internet
     Type: AWS::AutoScaling::AutoScalingGroup
   asgLc:
     Properties:
@@ -178,7 +178,6 @@ Resources:
                   s/\(^REDIS_PASSWORD\)=.*/\1=${SmartcoderApiRedisPassword}/g' .env && \
           cd ../../dify/docker && \
           sed -i 's/\(^\s*APP_URL:\).*/\1 https:\/\/${AppDomain}/g;
-                  s/^      \- "80:80"/      - "${AppPort}:80"/;
                   s/\(^\s*NEXT_AUTH_ENCRYPTION_KEY:\).*/\1 ${AppNextAuthEncryptionKey}/g;
                   s/\(^\s*NEXT_AUTH_SECRET_KEY:\).*/\1 ${AppNextAuthSecretKey}/g' docker-compose.yaml && \
           git diff
