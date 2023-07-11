@@ -1,0 +1,32 @@
+server {
+    listen 80 default_server;
+    server_name app.smartcoder.ai;
+
+    rewrite ^(.*) https://$server_name$1 permanent;
+}
+server {
+    listen 443 ssl;
+    ssl_certificate ssl/app.smartcoder.ai.pem;
+    ssl_certificate_key ssl/app.smartcoder.ai.key;
+    server_name app.smartcoder.ai;
+
+    location /console/api {
+      proxy_pass http://api:5001;
+      include proxy.conf;
+    }
+
+    location /api {
+      proxy_pass http://api:5001;
+      include proxy.conf;
+    }
+
+    location /v1 {
+      proxy_pass http://api:5001;
+      include proxy.conf;
+    }
+
+    location / {
+      proxy_pass http://web:3000;
+      include proxy.conf;
+    }
+}
