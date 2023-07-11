@@ -234,7 +234,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/proxy.conf:/etc/nginx/proxy.conf
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./volumes/nginx/conf.d:/etc/nginx/extra-conf
+      - ./volumes/nginx/extra-conf:/etc/nginx/extra-conf
       - ./volumes/nginx/ssl:/etc/nginx/ssl
     depends_on:
       - api
