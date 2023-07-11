@@ -84,9 +84,9 @@ Parameters:
   VPC:
     Type: AWS::EC2::VPC::Id
     Description: Choose which VPC the applicaion should be deployed to
-  IntSubnets:
-    Description: Choose which subnets the applicaion should be deployed to
-    Type: List<AWS::EC2::Subnet::Id>
+  # IntSubnets:
+  #   Description: Choose which subnets the applicaion should be deployed to
+  #   Type: List<AWS::EC2::Subnet::Id>
   ExtSubnets:
     Description: Choose which subnets the applicaion should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
@@ -126,7 +126,7 @@ Resources:
       - Key: Description
         PropagateAtLaunch: 'true'
         Value: This instance was created by dify-ASG
-      VPCZoneIdentifier: !Ref IntSubnets
+      VPCZoneIdentifier: !Ref ExtSubnets
     Type: AWS::AutoScaling::AutoScalingGroup
   asgLc:
     Properties:
@@ -141,6 +141,7 @@ Resources:
       InstanceType: !Ref InstanceType
       KeyName: !Sub ${EnvironmentName}webapplication
       SecurityGroups:
+      - !Ref extElbSecurityGroup
       - !Ref EcsSecurityGroup
       # SpotPrice: '0.083'
       UserData:
